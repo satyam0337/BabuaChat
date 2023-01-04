@@ -1,48 +1,26 @@
-// server.js
-const app = require('express')()
-const server = require('http').Server(app)
-const io = require('socket.io')(server, {
-  cors:{
-    origin: "*"
-  }
-})
-const next = require('next')
-const dev = process.env.NODE_ENV !== 'production'
-const nextApp = next({ dev })
-const nextHandler = nextApp.getRequestHandler()
+const express = require('express')
+const app = express()
+const http = require('http').createServer(app)
 
-io.on('connection', socket => {
+const PORT = process.env.PORT || 8080
 
-  socket.on('message', (data) => {
-    socket.broadcast.emit('message:received', data)
-  })
-
-  socket.on('count', (data) =>{
-    socket.broadcast.emit('count:received', data)
-  })
+http.listen(PORT, () => {
+    console.log(`Listening on port ${PORT}`)
 })
 
+app.use(express.static(__dirname + '/public'))
 
-
-
-nextApp.prepare().then(() => {
-  
-  app.get('/messages', (req, res) => {
-    
-    res.json(messages)
-  })
-
-  app.get('*', (req, res) => {
-    
-    return nextHandler(req, res)
-  })
-
-  server.listen(3000, (err) => {
-    if (err){ 
-      process.exit(0)
-      console.log('error')
-    }
-    console.log('> Ready on http://localhost:3000')
-  })
+app.get('/', (req, res) => {
+    res.sendFile(__dirname + '/index.html')
 })
 
+// Socket 
+const io = require('socket.io')(http)
+
+io.on('connection', (socket) => {
+    console.log('Connected...')
+    socket.on('message', (msg) => {
+        socket.broadcast.emit('message', msg)
+    })
+
+})
